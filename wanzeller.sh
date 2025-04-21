@@ -2,7 +2,7 @@
 set -e
 
 WORKDIR="$HOME/wanzeller"
-REPO_RAW="https://raw.githubusercontent.com/wwenderson/portainer/main/docker"
+REPO="https://raw.githubusercontent.com/wwenderson/docker/main"
 
 # 🗂️ Cria diretório de trabalho
 mkdir -p "$WORKDIR"
@@ -84,10 +84,10 @@ echo "✅ Arquivo '.env' gerado em $WORKDIR para uso no Portainer."
 
 # 6) Deploy do Traefik com substituição de variáveis
 echo "🚀 Deploy Traefik..."
-curl -sSL "$REPO_RAW/traefik/docker-compose.yaml" | envsubst > "$WORKDIR/traefik.yaml"
+curl -sSL "$REPO/traefik/docker-compose.yaml" | envsubst > "$WORKDIR/traefik.yaml"
 docker stack deploy --detach=true -c "$WORKDIR/traefik.yaml" traefik
 
 # 7) Deploy do Portainer com substituição de variáveis
 echo "🚀 Deploy Portainer..."
-curl -sSL "$REPO_RAW/portainer/docker-compose.yaml" | envsubst > "$WORKDIR/portainer.yaml"
+curl -sSL "$REPO/portainer/docker-compose.yaml" | envsubst > "$WORKDIR/portainer.yaml"
 docker stack deploy --detach=true -c "$WORKDIR/portainer.yaml" portainer
