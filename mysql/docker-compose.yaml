@@ -1,6 +1,7 @@
 version: "3.8"
 
 services:
+
   mysql:
     image: mysql:8.3
     entrypoint: ["/comum/ponto-de-entrada.sh"]
@@ -17,8 +18,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/SENHA
       MYSQL_PASSWORD_FILE: /run/secrets/SENHA
-      MYSQL_DATABASE: ${RADICAL}
-      MYSQL_USER: ${USUARIO}
+      MYSQL_DATABASE_FILE: /run/secrets/RADICAL
+      MYSQL_USER_FILE: /run/secrets/USUARIO
     secrets:
       - SENHA
       - USUARIO
