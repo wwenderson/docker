@@ -66,6 +66,9 @@ done
 docker network create --driver=overlay --attachable traefik_public >/dev/null 2>&1 || true
 docker network create --driver=overlay --attachable wanzeller_network >/dev/null 2>&1 || true
 
+# 🔐 Volume externo para os certificados TLS do Traefik
+docker volume create traefik_certificates >/dev/null 2>&1 || true
+
 # 4) Carrega variáveis no ambiente para uso com envsubst
 set -a
 export DOMINIO EMAIL USUARIO RADICAL SENHA
