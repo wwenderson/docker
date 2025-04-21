@@ -3,7 +3,6 @@ version: "3.8"
 services:
   phpmyadmin:
     image: wwanzeller/phpmyadmin:latest
-    entrypoint: ["/ponto-de-entrada.sh"]
     networks:
       - wanzeller_network
       - traefik_public
