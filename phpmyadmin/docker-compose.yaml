@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   phpmyadmin:
-    image: wwanzeller/phpmyadmin:custom
+    image: wanzeller/phpmyadmin:custom
     entrypoint: ["/comum/ponto-de-entrada.sh"]
     volumes:
       - ../comum/ponto-de-entrada.sh:/comum/ponto-de-entrada.sh:ro
