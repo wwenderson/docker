@@ -4,8 +4,6 @@ services:
   phpmyadmin:
     image: wwanzeller/phpmyadmin:latest
     entrypoint: ["/ponto-de-entrada.sh"]
-    volumes:
-      - ponto-de-entrada.sh:/ponto-de-entrada.sh:ro
     networks:
       - wanzeller_network
       - traefik_public
