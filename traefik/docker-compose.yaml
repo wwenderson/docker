@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik:v2.11
+    image: wwanzeller/traefik:custom     # resultado do Dockerfile acima
+    secrets:
+      - BASE_DOMAIN
     command:
       - --providers.docker=true
       - --providers.docker.swarmMode=true
