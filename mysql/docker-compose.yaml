@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.3
+    entrypoint: ["/comum/ponto-de-entrada.sh"]
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max-allowed-packet=512MB
+    networks:
+      - wanzeller_network
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../comum/ponto-de-entrada.sh:/comum/ponto-de-entrada.sh:ro
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/SENHA
+      MYSQL_PASSWORD_FILE: /run/secrets/SENHA
+      MYSQL_DATABASE: ${RADICAL}
+      MYSQL_USER: ${USUARIO}
+    secrets:
+      - SENHA
+      - USUARIO
+      - RADICAL
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+secrets:
+  SENHA:
+    external: true
+  USUARIO:
+    external: true
+  RADICAL:
+    external: true
+
+volumes:
+  mysql_data:
+    external: true
+
+networks:
+  wanzeller_network:
+    external: true

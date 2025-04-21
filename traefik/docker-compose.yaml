@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.11
+    command:
+      - --providers.docker=true
+      - --providers.docker.swarmMode=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.network=traefik_public
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+
+      # Let's Encrypt com variável do bootstrap
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.email=${EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+
+      # Redirecionamento global HTTP → HTTPS
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+
+      # Painel do Traefik
+      - --api.dashboard=true
+      - --log.level=DEBUG
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Painel do Traefik
+
+    volumes:
+      - traefik_certificates:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    networks:
+      - traefik_public
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik_public"
+        - "traefik.http.routers.api.rule=Host(`traefik.${DOMINIO}`)"
+        - "traefik.http.routers.api.entrypoints=websecure"
+        - "traefik.http.routers.api.tls.certresolver=le"
+        - "traefik.http.services.api.loadbalancer.server.port=8080"
+
+volumes:
+  traefik_certificates:
+    external: true
+
+networks:
+  traefik_public:
+    external: true

@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  phpmyadmin:
+    build: .
+    entrypoint: ["/comum/ponto-de-entrada.sh"]
+    volumes:
+      - ../comum/ponto-de-entrada.sh:/comum/ponto-de-entrada.sh:ro
+    networks:
+      - wanzeller_network
+      - traefik_public
+    secrets:
+      - DOMINIO
+      - EMAIL
+      - USUARIO
+      - RADICAL
+      - SENHA
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.phpmyadmin.rule=Host(`mysql.${DOMINIO}`)
+        - traefik.http.routers.phpmyadmin.entrypoints=websecure
+        - traefik.http.routers.phpmyadmin.tls.certresolver=le
+        - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
+
+secrets:
+  DOMINIO:
+    external: true
+  EMAIL:
+    external: true
+  USUARIO:
+    external: true
+  RADICAL:
+    external: true
+  SENHA:
+    external: true
+
+networks:
+  wanzeller_network:
+    external: true
+  traefik_public:
+    external: true
