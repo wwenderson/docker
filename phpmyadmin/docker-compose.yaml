@@ -43,7 +43,3 @@ networks:
     external: true
   traefik_public:
     external: true
-
-volumes:
-  ponto-de-entrada.sh:
-    external: true
