@@ -71,8 +71,6 @@ set -a
 export DOMINIO EMAIL USUARIO RADICAL SENHA
 set +a
 
-echo "✅ Arquivo '.env' gerado em $WORKDIR para uso no Portainer."
-
 # 5) Deploy do Traefik com substituição de variáveis
 echo "🚀 Deploy Traefik..."
 curl -sSL "$REPO/traefik.yaml" | envsubst > "$WORKDIR/traefik.yaml"
