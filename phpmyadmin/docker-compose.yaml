@@ -20,7 +20,7 @@ services:
           - node.role == manager
       labels:
         - traefik.enable=true
-        - traefik.http.routers.phpmyadmin.rule=Host(`mysql.${DOMINIO}`)
+        - traefik.http.routers.phpmyadmin.rule=Host(`mysql.{{ env "DOMAIN" }}`)
         - traefik.http.routers.phpmyadmin.entrypoints=websecure
         - traefik.http.routers.phpmyadmin.tls.certresolver=le
         - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
