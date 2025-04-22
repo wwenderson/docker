@@ -2,16 +2,13 @@ version: "3.8"
 
 services:
   phpmyadmin:
-    image: wwanzeller/phpmyadmin:latest
+    image: phpmyadmin:latest
     networks:
       - wanzeller_network
       - traefik_public
-    secrets:
-      - DOMINIO
-      - EMAIL
-      - USUARIO
-      - RADICAL
-      - SENHA
+    environment:
+      PMA_HOSTS: mysql
+      PMA_ARBITRARY: 0
     deploy:
       mode: replicated
       replicas: 1
@@ -20,22 +17,10 @@ services:
           - node.role == manager
       labels:
         - traefik.enable=true
-        - traefik.http.routers.phpmyadmin.rule=Host(`mysql.{{ env "DOMAIN" }}`)
+        - traefik.http.routers.phpmyadmin.rule=Host(`mysql.wendersonwanzeller.com`)
         - traefik.http.routers.phpmyadmin.entrypoints=websecure
         - traefik.http.routers.phpmyadmin.tls.certresolver=le
         - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
-
-secrets:
-  DOMINIO:
-    external: true
-  EMAIL:
-    external: true
-  USUARIO:
-    external: true
-  RADICAL:
-    external: true
-  SENHA:
-    external: true
 
 networks:
   wanzeller_network:

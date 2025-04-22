@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
+REPO="https://raw.githubusercontent.com/wwenderson/portainer/main"
 WORKDIR="$HOME/wanzeller"
-REPO="https://raw.githubusercontent.com/wwenderson/docker/main"
 
 # 🗂️ Cria diretório de trabalho
 mkdir -p "$WORKDIR"
@@ -66,31 +66,19 @@ done
 docker network create --driver=overlay --attachable traefik_public >/dev/null 2>&1 || true
 docker network create --driver=overlay --attachable wanzeller_network >/dev/null 2>&1 || true
 
-# 🔐 Volume externo para os certificados TLS do Traefik
-docker volume create traefik_certificates >/dev/null 2>&1 || true
-
 # 4) Carrega variáveis no ambiente para uso com envsubst
 set -a
 export DOMINIO EMAIL USUARIO RADICAL SENHA
 set +a
 
-# 5) Gera .env para uso manual ou no Portainer
-cat > "$WORKDIR/.env" <<EOF
-DOMAIN=$DOMINIO
-EMAIL=$EMAIL
-USUARIO=$USUARIO
-RADICAL=$RADICAL
-SENHA=$SENHA
-EOF
-
 echo "✅ Arquivo '.env' gerado em $WORKDIR para uso no Portainer."
 
-# 6) Deploy do Traefik com substituição de variáveis
+# 5) Deploy do Traefik com substituição de variáveis
 echo "🚀 Deploy Traefik..."
-curl -sSL "$REPO/traefik/docker-compose.yaml" | envsubst > "$WORKDIR/traefik.yaml"
+curl -sSL "$REPO/traefik.yaml" | envsubst > "$WORKDIR/traefik.yaml"
 docker stack deploy --detach=true -c "$WORKDIR/traefik.yaml" traefik
 
-# 7) Deploy do Portainer com substituição de variáveis
+# 6) Deploy do Portainer com substituição de variáveis
 echo "🚀 Deploy Portainer..."
-curl -sSL "$REPO/portainer/docker-compose.yaml" | envsubst > "$WORKDIR/portainer.yaml"
+curl -sSL "$REPO/portainer.yaml" | envsubst > "$WORKDIR/portainer.yaml"
 docker stack deploy --detach=true -c "$WORKDIR/portainer.yaml" portainer
