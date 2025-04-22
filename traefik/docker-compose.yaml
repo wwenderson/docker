@@ -4,7 +4,7 @@ services:
   traefik:
     image: wwanzeller/traefik:custom     # resultado do Dockerfile acima
     secrets:
-      - BASE_DOMAIN
+      - DOMINIO
     command:
       - --providers.docker=true
       - --providers.docker.swarmMode=true
@@ -60,4 +60,8 @@ volumes:
 
 networks:
   traefik_public:
+    external: true
+
+secrets:
+  DOMINIO:
     external: true

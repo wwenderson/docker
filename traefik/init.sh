@@ -1,3 +1,3 @@
 #!/bin/sh
-export BASE_DOMAIN=$(cat /run/secrets/BASE_DOMAIN)
+export DOMINIO=$(cat /run/secrets/DOMINIO)
 exec traefik "$@"
