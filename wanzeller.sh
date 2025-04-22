@@ -1,82 +1,79 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-REPO="https://raw.githubusercontent.com/wwenderson/portainer/main"
+REPO_RAW="https://raw.githubusercontent.com/wwenderson/portainer/main"
 WORKDIR="$HOME/wanzeller"
+mkdir -p "$WORKDIR" && cd "$WORKDIR"
 
-# 🗂️ Cria diretório de trabalho
-mkdir -p "$WORKDIR"
-cd "$WORKDIR"
-
-# 🔍 Verifica se o 'envsubst' está instalado
-if ! command -v envsubst >/dev/null 2>&1; then
-  echo "⚠️  O utilitário 'envsubst' não está instalado. Tentando instalar automaticamente..."
-  if command -v apt >/dev/null 2>&1; then
-    sudo apt update && sudo apt install -y gettext-base
-  else
-    echo "❌ Instalação automática falhou. Por favor, instale manualmente com:"
-    echo "   sudo apt install gettext-base"
-    exit 1
-  fi
+#
+# 0 · dependência mínima
+#
+if ! command -v envsubst >/dev/null; then
+  echo "Instalando gettext-base (envsubst)…"
+  sudo apt-get update -qq && sudo apt-get install -y -qq gettext-base
 fi
 
-# 1) Coleta os dados do usuário
-while true; do
-  read -p "Informe o nome de usuário base (ex: wanzeller): " USUARIO
-  [[ "$USUARIO" =~ ^[a-zA-Z0-9_]{3,}$ ]] && break
-  echo "❌ Nome de usuário inválido. Use apenas letras, números ou underline. Mínimo 3 caracteres."
+#
+# 1 · inputs do usuário
+#
+read -rp "Usuário base           : " USUARIO
+while [[ ! $USUARIO =~ ^[A-Za-z0-9_]{3,}$ ]]; do
+  read -rp "❌ Inválido. Tente de novo: " USUARIO
 done
 
-while true; do
-  read -p "Informe o e-mail principal do sistema (ex: voce@dominio.com): " EMAIL
-  [[ "$EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && break
-  echo "❌ E-mail inválido. Exemplo: seuemail@dominio.com"
+read -rp "E‑mail administrativo  : " EMAIL
+while [[ ! $EMAIL =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; do
+  read -rp "❌ Inválido. Tente de novo: " EMAIL
 done
 
-while true; do
-  read -p "Informe o domínio principal (ex: seudominio.com): " DOMINIO
-  [[ "$DOMINIO" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]] && break
-  echo "❌ Domínio inválido. Exemplo: seudominio.com"
+read -rp "Domínio principal      : " DOMINIO
+while [[ ! $DOMINIO =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; do
+  read -rp "❌ Inválido. Tente de novo: " DOMINIO
 done
 
-RADICAL=$(echo "$DOMINIO" | awk -F. '{print $(NF-1)}')
+RADICAL=$(awk -F. '{print $(NF-1)}' <<<"$DOMINIO")
 
-while true; do
-  read -s -p "Defina uma senha segura (mínimo 8 caracteres): " SENHA
-  echo
-  read -s -p "Confirme a senha: " CONFIRMA
-  echo
-  if [[ "$SENHA" == "$CONFIRMA" && ${#SENHA} -ge 8 ]]; then
-    break
-  fi
-  echo "❌ As senhas não coincidem ou são muito curtas. Tente novamente."
+while :; do
+  read -srp "Senha (≥8)             : " SENHA; echo
+  read -srp "Confirmar senha        : " CONF; echo
+  [[ $SENHA == "$CONF" && ${#SENHA} -ge 8 ]] && break
+  echo "❌ Senha curta ou não confere."
 done
 
-# 2) Criação de secrets individuais
-for VARIAVEL in DOMINIO EMAIL USUARIO RADICAL SENHA; do
-  VALOR="${!VARIAVEL}"
-  if docker secret inspect "$VARIAVEL" >/dev/null 2>&1; then
-    docker secret rm "$VARIAVEL" >/dev/null 2>&1 || true
-  fi
-  echo "$VALOR" | docker secret create "$VARIAVEL" -
-  echo "✅ Secret '$VARIAVEL' criado."
+#
+# 2 · secrets
+#
+for VAR in DOMINIO EMAIL USUARIO RADICAL SENHA; do
+  docker secret rm "$VAR" >/dev/null 2>&1 || true
+  printf '%s\n' "${!VAR}" | docker secret create "$VAR" -
 done
+echo "✅ Secrets atualizados."
 
-# 3) Criação das redes necessárias
-docker network create --driver=overlay --attachable traefik_public >/dev/null 2>&1 || true
-docker network create --driver=overlay --attachable wanzeller_network >/dev/null 2>&1 || true
+#
+# 3 · rede + volume para certificados
+#
+docker network create --driver=overlay --attachable traefik_public 2>/dev/null || true
+docker network create --driver=overlay --attachable wanzeller_network 2>/dev/null || true
+docker volume  create traefik_certificates                          2>/dev/null || true
 
-# 4) Carrega variáveis no ambiente para uso com envsubst
-set -a
+#
+# 4 · exporta para o envsubst (vidas curtíssima — só neste shell)
+#
 export DOMINIO EMAIL USUARIO RADICAL SENHA
+set -a   # inclui variáveis novas no ambiente
 set +a
 
-# 5) Deploy do Traefik com substituição de variáveis
-echo "🚀 Deploy Traefik..."
-curl -sSL "$REPO/traefik.yaml" | envsubst > "$WORKDIR/traefik.yaml"
-docker stack deploy --detach=true -c "$WORKDIR/traefik.yaml" traefik
+#
+# 5 · deploy
+#
+# Traefik
+curl -fsSL "$REPO_RAW/traefik.yaml" \
+  | envsubst '$EMAIL $DOMINIO' \
+  | docker stack deploy -c - traefik  
 
-# 6) Deploy do Portainer com substituição de variáveis
-echo "🚀 Deploy Portainer..."
-curl -sSL "$REPO/portainer.yaml" | envsubst > "$WORKDIR/portainer.yaml"
-docker stack deploy --detach=true -c "$WORKDIR/portainer.yaml" portainer
+# Portainer
+curl -fsSL "$REPO_RAW/portainer.yaml" \
+  | envsubst '$DOMINIO' \
+  | docker stack deploy -c - portainer
+
+echo "✨ Pronto!  Consulte https://traefik.$DOMINIO e https://portainer.$DOMINIO"
